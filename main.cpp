@@ -1,3 +1,5 @@
+#pragma GCC optimize(2)
+
 #include <cstdio>
 #include <cstring>
 #include <iostream>
