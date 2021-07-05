@@ -9,6 +9,7 @@
 #include "analysis.hpp"
 #include "carried.hpp"
 #include "loads.hpp"
+#include "classes.hpp"
 
 using namespace std;
 using uint = unsigned;
@@ -42,6 +43,7 @@ inline cdptr code_catch(const uint &pc){
         if (code_cache[i]->pc == pc) return new comd(pc, code_cache[i]->cmd);
     }
     uint cmd = fetch(ram, pc, 4);
+    if (code_cache[cains]) delete code_cache[cains], code_cache[cains] = nullptr;
     code_cache[cains++] = new comd(pc, cmd);
     if (cains == Csize) cains = 0;
     return new comd(pc, cmd);
@@ -77,8 +79,8 @@ void halt(){
 }
 
 int main(){
-    freopen("sample.data", "r", stdin);
-    freopen("output.txt", "w", stdout);
+    // freopen("sample.data", "r", stdin);
+    // freopen("output.txt", "w", stdout);
     readle();
     uint haz1[2], haz2[2];
     for (int i = 0;i < 2;i++) haz1[i] = haz2[i] = 0;
