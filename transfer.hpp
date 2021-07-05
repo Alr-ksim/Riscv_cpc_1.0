@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <iostream>
 #include <cstring>
+#include "classes.hpp"
 
 using namespace std;
 using uint = unsigned;
@@ -22,15 +23,10 @@ int transfer(char *s){
     return x;
 }
 
-inline void gain(uint &des, uint pos,const char &c){
-    for (int i = 0;i < 8;i++)
-        if (c & (1<<i)) des += (1<<(pos+i));
-    return;
-}
 uint fetch(const char *src, uint cur, int bit){
     uint x = 0;
     for (int i = 0;i < bit;i++)
-        gain(x, i<<3, src[cur+i]);
+        x += (Binum(uint(src[cur+i])).slice(0, 8)) << (i<<3);
     return x;
 }
 

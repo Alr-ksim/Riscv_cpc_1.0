@@ -28,16 +28,19 @@ wrptr instation(const inptr &dat, char *rm){
     {
     case 1: return car_R(irptr(dat), rm);
     case 2: return car_W(iwptr(dat), rm);
-    default: break;
+    case 3: return wrptr(dat);
+    default: return nullptr;
     }
 }
 
 void des(inptr dat){
+    if (!dat) return;
     switch (dat->type)
     {
     case 1: { delete irptr(dat); return; }
     case 2: { delete iwptr(dat); return; }
-    default: { cerr << "bad inp" << endl; return; }
+    case 3: { return; }
+    default: { cerr << "bad inp " << dat->type << endl; return; }
     }
 }
 

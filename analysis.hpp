@@ -6,6 +6,7 @@
 
 using namespace std;
 using uint = unsigned;
+using cdptr = comd *;
 using daptr = data *;
 using drptr = data_R *;
 using diptr = data_I *;
@@ -25,27 +26,27 @@ commands anatype(const uint &cmd){
     }
     return commands(6);
 }
-daptr sol_R(const uint &cmd, const uint *rg){
-    Binum bins(cmd);
+daptr sol_R(const cdptr cdp, const uint *rg){
+    Binum bins(cdp->cmd);
     uint op = bins.slice(0, 7);
     uint rd = bins.slice(7, 12);
     uint fun1 = bins.slice(12, 15);
     uint rs1 = rg[bins.slice(15, 20)];
     uint rs2 = rg[bins.slice(20, 25)];
     uint fun2 = bins.slice(25, 32);
-    return new data_R(R, op, fun1, fun2, rs1, rs2, rd);
+    return new data_R(cdp->pc, R, op, fun1, fun2, rs1, rs2, rd);
 }
-daptr sol_I(const uint &cmd, const uint *rg){
-    Binum bins(cmd);
+daptr sol_I(const cdptr cdp, const uint *rg){
+    Binum bins(cdp->cmd);
     uint op = bins.slice(0, 7);
     uint rd = bins.slice(7, 12);
     uint fun = bins.slice(12, 15);
     uint rs = rg[bins.slice(15, 20)];
     uint imm = Binum(bins.slice(20, 32), 12).extended();
-    return new data_I(I, op, fun, rs, rd, imm);
+    return new data_I(cdp->pc, I, op, fun, rs, rd, imm);
 }
-daptr sol_S(const uint &cmd, const uint *rg){
-    Binum bins(cmd);
+daptr sol_S(const cdptr cdp, const uint *rg){
+    Binum bins(cdp->cmd);
     uint op = bins.slice(0, 7);
     uint imm1 = bins.slice(7, 12);
     uint fun = bins.slice(12, 15);
@@ -54,10 +55,10 @@ daptr sol_S(const uint &cmd, const uint *rg){
     uint imm2 = bins.slice(25, 32);
     uint imm = imm1 + (imm2<<5);
     imm = Binum(imm, 12).extended();
-    return new data_S(S, op, fun, rs1, rs2, imm);
+    return new data_S(cdp->pc, S, op, fun, rs1, rs2, imm);
 }
-daptr sol_B(const uint &cmd, const uint *rg){
-    Binum bins(cmd);
+daptr sol_B(const cdptr cdp, const uint *rg){
+    Binum bins(cdp->cmd);
     uint op = bins.slice(0, 7);
     uint imm1 = bins.slice(7, 8);
     uint imm2 = bins.slice(8, 12);
@@ -68,18 +69,18 @@ daptr sol_B(const uint &cmd, const uint *rg){
     uint imm4 = bins.slice(31, 32);
     uint imm = (imm1<<11) + (imm2<<1) + (imm3<<5) + (imm4<<12);
     imm = Binum(imm, 13).extended();
-    return new data_B(B, op, fun, rs1, rs2, imm);
+    return new data_B(cdp->pc, B, op, fun, rs1, rs2, imm);
 }
-daptr sol_U(const uint &cmd, const uint *rg){
-    Binum bins(cmd);
+daptr sol_U(const cdptr cdp, const uint *rg){
+    Binum bins(cdp->cmd);
     uint op = bins.slice(0, 7);
     uint rd = bins.slice(7, 12);
     uint imm = bins.slice(12, 32);
     imm <<= 12;
-    return new data_U(U, op, rd, imm);
+    return new data_U(cdp->pc, U, op, rd, imm);
 }
-daptr sol_J(const uint &cmd, const uint *rg){
-    Binum bins(cmd);
+daptr sol_J(const cdptr cdp, const uint *rg){
+    Binum bins(cdp->cmd);
     uint op = bins.slice(0, 7);
     uint rd = bins.slice(7, 12);
     uint imm1 = bins.slice(12, 20);
@@ -88,19 +89,19 @@ daptr sol_J(const uint &cmd, const uint *rg){
     uint imm4 = bins.slice(31, 32);
     uint imm = (imm3<<1) + (imm2<<11) + (imm1<<12) + (imm4<<20);
     imm = Binum(imm, 21).extended();
-    return new data_J(J, op, rd, imm);
+    return new data_J(cdp->pc, J, op, rd, imm);
 }
 
-daptr sol(const uint &cmd, const uint *rg){
-    commands t(anatype(cmd));
+daptr sol(const cdptr cdp, const uint *rg){
+    commands t(anatype(cdp->cmd));
     switch (t)
     {
-    case R: return sol_R(cmd, rg);
-    case I: return sol_I(cmd, rg);
-    case S: return sol_S(cmd, rg);
-    case B: return sol_B(cmd, rg);
-    case U: return sol_U(cmd, rg);
-    case J: return sol_J(cmd, rg);
+    case R: return sol_R(cdp, rg);
+    case I: return sol_I(cdp, rg);
+    case S: return sol_S(cdp, rg);
+    case B: return sol_B(cdp, rg);
+    case U: return sol_U(cdp, rg);
+    case J: return sol_J(cdp, rg);
     default:{
         cerr << "wrong type" << endl;
         return nullptr;
@@ -110,6 +111,7 @@ daptr sol(const uint &cmd, const uint *rg){
 }
 
 void des(daptr dat){
+    if (!dat) return;
     switch (dat->cd)
     {
     case R: { delete drptr(dat); return; }
@@ -119,5 +121,40 @@ void des(daptr dat){
     case U: { delete duptr(dat); return; }
     case J: { delete djptr(dat); return; }
     default:{ cerr << "wrong type" << endl; return; }  
+    }
+}
+
+void hazload(const uint &cmd, uint *haz, int &h){
+    commands t(anatype(cmd));
+    Binum bins(cmd);
+    switch (t)
+    {
+    case R: {
+        uint rs = bins.slice(15, 20);
+        if (rs) haz[h++] = rs;
+        rs = bins.slice(20, 25);
+        if (rs) haz[h++] = rs;
+        break;
+    }
+    case I: {
+        uint rs = bins.slice(15, 20);
+        if (rs) haz[h++] = rs;
+        break;
+    }
+    case S: {
+        uint rs = bins.slice(15, 20);
+        if (rs) haz[h++] = rs;
+        rs = bins.slice(20, 25);
+        if (rs) haz[h++] = rs;
+        break;
+    }
+    case B: {
+        uint rs = bins.slice(15, 20);
+        if (rs) haz[h++] = rs;
+        rs = bins.slice(20, 25);
+        if (rs) haz[h++] = rs;
+        break;
+    }
+    default: return;
     }
 }
